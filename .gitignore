@@ -1,0 +1,5 @@
+*.lock
+.metadata
+.recommenders
+RemoteSystemsTempFiles
+WebCache\bin\
