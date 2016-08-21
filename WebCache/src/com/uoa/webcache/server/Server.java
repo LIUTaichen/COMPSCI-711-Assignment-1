@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -23,9 +24,12 @@ public class Server {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		loadFiles();
+		
 		while (!serverSocket.isClosed()) {
 			try {
-				log("Openning Server socket at port " +PORT_NO + " , waiting for connection from clients");
+				log("Opening Server socket at port " +PORT_NO + " , waiting for connection from clients");
 
 				Socket socket = serverSocket.accept();
 				
@@ -35,6 +39,7 @@ public class Server {
 				 log("received command : [" + commandFromClient+"]");
 				 if(LIST_FILE_COMMAND.equals(commandFromClient)){
 					 log("client requested file list");
+					 ObjectOutputStream outToClient = new ObjectOutputStream(socket.getOutputStream());
 				 }else{
 					 
 				 }
@@ -55,6 +60,21 @@ public class Server {
 		}
 	}
 	
+	private static void loadFiles() {
+		
+		File folder = new File("src/resources/files");
+		log(folder.getAbsolutePath());
+		File[] listOfFiles = folder.listFiles();
+		if(listOfFiles ==null){
+			log("wrong directory, no files loaded");
+			return;
+		}
+		for(File file : listOfFiles){
+			log(file.getName());
+			fileMap.put(file.getName(), file);
+		}
+	}
+
 	private static void log(Object object){
 		System.out.println(object);
 	}
