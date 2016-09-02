@@ -27,7 +27,7 @@ public class Server {
 		ServerSocket serverSocket = null;
 		Socket socket = null;
 		serverSocket = new ServerSocket(PORT_NO);
-		serverSocket.setSoTimeout(60000);
+		serverSocket.setSoTimeout(600000);
 
 		while (true) {
 			try {
