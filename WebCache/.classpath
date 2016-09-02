@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry exported="true" kind="var" path="SWT_LIB"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding_1.6.0.v20160412-0910.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding_1.6.0.v20160412-0910.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding.beans_1.3.100.v20160509-1025.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding.beans_1.3.100.v20160509-1025.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding.observable_1.6.0.v20160511-1747.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding.observable_1.6.0.v20160511-1747.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding.property_1.6.0.v20160427-0852.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.core.databinding.property_1.6.0.v20160427-0852.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.jface.databinding_1.8.0.v20160420-2231.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.jface.databinding_1.8.0.v20160420-2231.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.equinox.common_3.8.0.v20160509-1230.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/org.eclipse.equinox.common_3.8.0.v20160509-1230.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/com.ibm.icu_56.1.0.v201601250100.jar" sourcepath="C:/Program Files/eclipse/eclipse-jee-neon-R-win32-x86_64/eclipse/plugins/com.ibm.icu_56.1.0.v201601250100.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="var" path="SWT_LIB"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
