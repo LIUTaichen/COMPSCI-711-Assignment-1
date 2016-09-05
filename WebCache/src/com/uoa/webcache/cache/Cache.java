@@ -86,49 +86,6 @@ public class Cache extends Thread {
 		log.info("Server stopping");
 	}
 
-	public void startCacheService() throws IOException {
-		log.info("calling start cache service ");
-		Socket socket = null;
-		cacheListeningSocket = new ServerSocket(CLIENT_TO_CACHE_PORT_NO);
-		cacheListeningSocket.setSoTimeout(600000);
-
-		while (!Thread.interrupted()) {
-			try {
-				log.info("Cache is opening new socket at port " + CLIENT_TO_CACHE_PORT_NO
-						+ " , waiting for connection from clients");
-
-				socket = cacheListeningSocket.accept();
-
-				DataInputStream input = new DataInputStream(socket.getInputStream());
-				OutputStream outputStream = socket.getOutputStream();
-
-				String commandFromClient = input.readUTF();
-				log.info("received command : [" + commandFromClient + "]");
-				if (LIST_FILES_COMMAND.equals(commandFromClient)) {
-					this.handleFileListRequest(outputStream);
-
-				} else {
-					this.hanldeFileTransferRequest(outputStream, commandFromClient);
-				}
-
-			} catch (SocketTimeoutException s) {
-				log.info("Socket timed out!");
-				break;
-			} catch (IOException e) {
-				e.printStackTrace();
-				break;
-			} catch (Exception e) {
-				e.printStackTrace();
-				break;
-			} finally {
-				socket.close();
-			}
-
-		}
-
-		cacheListeningSocket.close();
-		log.info("Cache stopping");
-	}
 
 	private void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
 			throws FileNotFoundException, IOException {

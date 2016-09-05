@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 
 import com.uoa.webcache.cache.Cache;
 
-public class Server {
+public class Server extends Thread {
 	private static Logger log = Logger.getLogger(Server.class.getName());
 	private static final int PORT_NO = 8080;
 	private static final String LIST_FILES_COMMAND = "list files";
@@ -72,6 +72,67 @@ public class Server {
 		log.info("Server stopping");
 	}
 
+	
+	public  void run()  {
+		loadFiles();
+		ServerSocket serverSocket = null;
+		Socket socket = null;
+		try {
+			serverSocket = new ServerSocket(PORT_NO);
+			serverSocket.setSoTimeout(600000);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+
+		while (true) {
+			try {
+				log.info("Server opening new socket at port " + PORT_NO + " , waiting for connection from cache");
+
+				log.info("Server socket is listening for traffic!");
+				socket = serverSocket.accept();
+
+				DataInputStream input = new DataInputStream(socket.getInputStream());
+				OutputStream outputStream = socket.getOutputStream();
+
+				String commandFromClient = input.readUTF();
+				log.info("received command : [" + commandFromClient + "]");
+				if (LIST_FILES_COMMAND.equals(commandFromClient)) {
+					handleFileListRequest(outputStream);
+
+				} else {
+					hanldeFileTransferRequest(outputStream, commandFromClient);
+				}
+
+			} catch (SocketTimeoutException s) {
+				log.info("Socket timed out!");
+				break;
+			} catch (IOException e) {
+				e.printStackTrace();
+				break;
+			} catch (Exception e) {
+				e.printStackTrace();
+				break;
+			} finally {
+				try {
+					socket.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		log.info("Server stopping");
+	}
 	private static void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
 			throws FileNotFoundException, IOException {
 		File requestedFile = fileMap.get(fileName);
