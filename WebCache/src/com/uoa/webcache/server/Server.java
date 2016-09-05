@@ -16,11 +16,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
+
+import com.uoa.webcache.cache.Cache;
 
 public class Server {
+	private static Logger log = Logger.getLogger(Server.class.getName());
 	private static final int PORT_NO = 8080;
-	private static final String LIST_FILE_COMMAND = "list files";
+	private static final String LIST_FILES_COMMAND = "list files";
 	private static Map<String, File> fileMap = new HashMap<String, File>();
+	
 
 	public static void main(String args[]) throws IOException {
 		loadFiles();
@@ -31,17 +36,17 @@ public class Server {
 
 		while (true) {
 			try {
-				log("Opening new socket at port " + PORT_NO + " , waiting for connection from clients");
+				log.info("Server opening new socket at port " + PORT_NO + " , waiting for connection from cache");
 
-				log("Server socket is listening for traffic!");
+				log.info("Server socket is listening for traffic!");
 				socket = serverSocket.accept();
 
 				DataInputStream input = new DataInputStream(socket.getInputStream());
 				OutputStream outputStream = socket.getOutputStream();
 
 				String commandFromClient = input.readUTF();
-				log("received command : [" + commandFromClient + "]");
-				if (LIST_FILE_COMMAND.equals(commandFromClient)) {
+				log.info("received command : [" + commandFromClient + "]");
+				if (LIST_FILES_COMMAND.equals(commandFromClient)) {
 					handleFileListRequest(outputStream);
 
 				} else {
@@ -49,7 +54,7 @@ public class Server {
 				}
 
 			} catch (SocketTimeoutException s) {
-				log("Socket timed out!");
+				log.info("Socket timed out!");
 				break;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -64,7 +69,7 @@ public class Server {
 		}
 
 		serverSocket.close();
-		log("Server stopping");
+		log.info("Server stopping");
 	}
 
 	private static void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
@@ -87,7 +92,7 @@ public class Server {
 	}
 
 	private static void handleFileListRequest(OutputStream outputStream) throws IOException {
-		log("client requested file list");
+		log.info("client requested file list");
 		ObjectOutputStream outToClient = new ObjectOutputStream(outputStream);
 		Set<String> fileList = new HashSet<String>(fileMap.keySet());
 		outToClient.writeObject(fileList);
@@ -96,19 +101,16 @@ public class Server {
 	private static void loadFiles() {
 
 		File folder = new File("src/resources/files");
-		log(folder.getAbsolutePath());
+		log.info(folder.getAbsolutePath());
 		File[] listOfFiles = folder.listFiles();
 		if (listOfFiles == null) {
-			log("wrong directory, no files loaded");
+			log.info("wrong directory, no files loaded");
 			return;
 		}
 		for (File file : listOfFiles) {
-			log(file.getName());
+			log.info(file.getName());
 			fileMap.put(file.getName(), file);
 		}
 	}
 
-	private static void log(Object object) {
-		System.out.println(object);
-	}
 }

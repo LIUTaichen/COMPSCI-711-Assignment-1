@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 
 public class Client {
 
+	private static final int CACHE_PORT_NO = 8081;
 	private static final String LIST_FILES_COMMAND = "list files";
 	private static Logger log = Logger.getLogger(Client.class.getName());
 	private List<String> serverFileList;
@@ -49,7 +50,7 @@ public class Client {
 	public Socket requestFileTransfer(String fileName) throws UnknownHostException, IOException {
 
 		Socket clientSocket;
-		clientSocket = new Socket("localhost", 8080);
+		clientSocket = new Socket("localhost", CACHE_PORT_NO);
 		DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 		DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
 
@@ -80,7 +81,7 @@ public class Client {
 
 	public void requestFileList() throws UnknownHostException, IOException {
 		Socket clientSocket;
-		clientSocket = new Socket("localhost", 8080);
+		clientSocket = new Socket("localhost", CACHE_PORT_NO);
 
 		System.out.println("Client socket connected");
 		DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());

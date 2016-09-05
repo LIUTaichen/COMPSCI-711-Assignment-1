@@ -26,16 +26,17 @@ public class ClientGUI {
 	private DataBindingContext m_bindingContext;
 
 	protected Shell shell;
-	
-	private  Client client;
+
+	private Client client;
 	private List serverFileList;
-	
-	public ClientGUI(){
+
+	public ClientGUI() {
 		this.client = new Client();
 	}
 
 	/**
 	 * Launch the application.
+	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
@@ -75,9 +76,9 @@ public class ClientGUI {
 		shell.setSize(865, 816);
 		shell.setText("SWT Application");
 		shell.setLayout(new FormLayout());
-		
+
 		Button btnDownload = new Button(shell, SWT.NONE);
-		
+
 		FormData fd_btnDownload = new FormData();
 		fd_btnDownload.bottom = new FormAttachment(100, -439);
 		fd_btnDownload.right = new FormAttachment(0, 171);
@@ -88,17 +89,14 @@ public class ClientGUI {
 			}
 		});
 		btnDownload.setText("Download");
-		
-		
-		
-		
-		StyledText fileContent = new StyledText(shell, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP |  SWT.V_SCROLL);
+
+		StyledText fileContent = new StyledText(shell, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
 		FormData fd_fileContent = new FormData();
 		fd_fileContent.bottom = new FormAttachment(100);
 		fd_fileContent.right = new FormAttachment(0, 813);
 		fd_fileContent.left = new FormAttachment(0, 340);
 		fileContent.setLayoutData(fd_fileContent);
-		
+
 		Button btnRefresh = new Button(shell, SWT.NONE);
 		FormData fd_btnRefresh = new FormData();
 		fd_btnRefresh.right = new FormAttachment(fileContent, -6);
@@ -109,9 +107,9 @@ public class ClientGUI {
 			public void mouseUp(MouseEvent e) {
 				try {
 					client.requestFileList();
-					System.out.println("count      " +serverFileList.getItemCount() );
-					System.out.println("count    client  " +client.getServerFileList().size() );
-					
+					System.out.println("count      " + serverFileList.getItemCount());
+					System.out.println("count    client  " + client.getServerFileList().size());
+
 					serverFileList.setItems((String[]) client.getServerFileList().toArray(new String[0]));
 				} catch (UnknownHostException e1) {
 					e1.printStackTrace();
@@ -121,15 +119,16 @@ public class ClientGUI {
 			}
 		});
 		btnRefresh.setText("Refresh");
-		
+
 		List downloadedFileList = new List(shell, SWT.BORDER | SWT.V_SCROLL);
 		fd_btnRefresh.bottom = new FormAttachment(downloadedFileList, -68);
 		downloadedFileList.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				String fileToBeDisplayed = downloadedFileList.getSelection()[0];
-				fileContent.setText(client.getFileContent(fileToBeDisplayed));
-				
+				if (downloadedFileList.getSelection().length != 0) {
+					String fileToBeDisplayed = downloadedFileList.getSelection()[0];
+					fileContent.setText(client.getFileContent(fileToBeDisplayed));
+				}
 			}
 		});
 		FormData fd_downloadedFileList = new FormData();
@@ -138,7 +137,7 @@ public class ClientGUI {
 		fd_downloadedFileList.right = new FormAttachment(fileContent, -6);
 		fd_downloadedFileList.left = new FormAttachment(0);
 		downloadedFileList.setLayoutData(fd_downloadedFileList);
-		
+
 		serverFileList = new List(shell, SWT.BORDER | SWT.V_SCROLL);
 		fd_btnRefresh.top = new FormAttachment(serverFileList, 6);
 		fd_btnDownload.top = new FormAttachment(serverFileList, 6);
@@ -149,7 +148,7 @@ public class ClientGUI {
 		fd_serverFileList.top = new FormAttachment(0, 39);
 		fd_serverFileList.bottom = new FormAttachment(0, 303);
 		serverFileList.setLayoutData(fd_serverFileList);
-		
+
 		Label lblListOfFiles = new Label(shell, SWT.NONE);
 		lblListOfFiles.setFont(SWTResourceManager.getFont("Segoe UI", 9, SWT.NORMAL));
 		FormData fd_lblListOfFiles = new FormData();
@@ -159,7 +158,7 @@ public class ClientGUI {
 		fd_lblListOfFiles.right = new FormAttachment(0, 204);
 		lblListOfFiles.setLayoutData(fd_lblListOfFiles);
 		lblListOfFiles.setText("List of Files on Server");
-		
+
 		Label lblFileContent = new Label(shell, SWT.NONE);
 		fd_fileContent.top = new FormAttachment(lblFileContent, 6);
 		FormData fd_lblFileContent = new FormData();
@@ -167,7 +166,7 @@ public class ClientGUI {
 		fd_lblFileContent.left = new FormAttachment(fileContent, 0, SWT.LEFT);
 		lblFileContent.setLayoutData(fd_lblFileContent);
 		lblFileContent.setText("File Content");
-		
+
 		Label lblListOfDownloaded = new Label(shell, SWT.NONE);
 		FormData fd_lblListOfDownloaded = new FormData();
 		fd_lblListOfDownloaded.bottom = new FormAttachment(downloadedFileList, -6);
@@ -175,14 +174,13 @@ public class ClientGUI {
 		lblListOfDownloaded.setLayoutData(fd_lblListOfDownloaded);
 		lblListOfDownloaded.setText("List of Downloaded Files");
 		m_bindingContext = initDataBindings();
-		
-		
+
 		btnDownload.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseUp(MouseEvent e) {
-				if(serverFileList.getSelection().length == 0){
+				if (serverFileList.getSelection().length == 0) {
 					System.out.println("No file selected");
-				}else{
+				} else {
 					String requestedFileName = serverFileList.getSelection()[0];
 					System.out.println("selected file : " + requestedFileName);
 					try {
@@ -194,10 +192,11 @@ public class ClientGUI {
 						e1.printStackTrace();
 					}
 				}
-				
+
 			}
 		});
 	}
+
 	protected DataBindingContext initDataBindings() {
 		DataBindingContext bindingContext = new DataBindingContext();
 		//
