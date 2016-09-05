@@ -161,7 +161,7 @@ public class Server extends Thread {
 
 	private static void loadFiles() {
 
-		File folder = new File("src/resources/files");
+		File folder = new File("files");
 		log.info(folder.getAbsolutePath());
 		File[] listOfFiles = folder.listFiles();
 		if (listOfFiles == null) {
