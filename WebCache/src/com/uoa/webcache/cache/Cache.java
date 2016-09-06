@@ -1,6 +1,8 @@
 package com.uoa.webcache.cache;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -19,12 +21,16 @@ import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import com.uoa.webcache.filefragments.FileFragments;
 
 public class Cache extends Thread {
 
@@ -39,7 +45,8 @@ public class Cache extends Thread {
 	private String cacheLog = new String();
 	private CacheGUI gui;
 	private ServerSocket cacheListeningSocket;
-
+	private Map<String, FileFragments> fileFragmentsMap = new HashMap<String, FileFragments>();
+	private Map<String, byte[]> digestToPartsMap = new HashMap<String, byte[]>();
 
 	public static void main(String args[]) throws IOException {
 		ServerSocket cacheListeningSocket = null;
@@ -86,43 +93,32 @@ public class Cache extends Thread {
 		log.info("Server stopping");
 	}
 
-
 	private void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
 			throws FileNotFoundException, IOException {
-		File requestedFile;
-		boolean cached = cacheList.contains(fileName);
-		if (!cached) {
-
-			Socket cacheToServerSocket;
-			cacheToServerSocket = new Socket("localhost", CACHE_TO_SERVER_PORT_NO);
-			DataOutputStream out = new DataOutputStream(cacheToServerSocket.getOutputStream());
-			DataInputStream dataInputStream = new DataInputStream(cacheToServerSocket.getInputStream());
-
-			FileOutputStream fileOutput = new FileOutputStream(fileName);
-			try {
-				out.writeUTF(fileName);
-
-				byte[] buffer = new byte[8132];
-				int read = 0;
-				while ((read = dataInputStream.read(buffer)) != -1) {
-					fileOutput.write(buffer, 0, read);
-
+		ByteArrayOutputStream fileOutputStream = new ByteArrayOutputStream();
+		int totalSize = 0;
+		int cachedSize = 0;
+		if (!fileFragmentsMap.containsKey(fileName)) {
+			log.info("file not found");
+			return;
+		} else {
+			FileFragments fragments = fileFragmentsMap.get(fileName);
+			for (String digest : fragments.getFragmentDigestList()) {
+				if (digestToPartsMap.containsKey(digest)) {
+					byte[] filePart = digestToPartsMap.get(digest);
+					totalSize += filePart.length;
+					cachedSize += filePart.length;
+					fileOutputStream.write(filePart);
+				} else {
+					byte[] filePart = requestFilePartFromServer(digest);
+					totalSize += filePart.length;
+					fileOutputStream.write(filePart);
 				}
-				cacheList.add(fileName);
-				gui.setCachedFiles((String[]) cacheList.toArray(new String[0]));
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				out.close();
-				dataInputStream.close();
-				fileOutput.close();
-				cacheToServerSocket.close();
 			}
 		}
-		requestedFile = new File(fileName);
+
 		byte[] tempByteArray = new byte[8132];
-		FileInputStream fis = new FileInputStream(requestedFile);
-		BufferedInputStream bis = new BufferedInputStream(fis);
+		ByteArrayInputStream bis = new ByteArrayInputStream(fileOutputStream.toByteArray());
 		DataInputStream dis = new DataInputStream(bis);
 		DataOutputStream outToClient = new DataOutputStream(outputStream);
 		int read;
@@ -130,11 +126,39 @@ public class Cache extends Thread {
 			outToClient.write(tempByteArray, 0, read);
 			outToClient.flush();
 		}
-		fis.close();
 		bis.close();
 		dis.close();
-		writeLog(fileName, cached);
+		writeLog(fileName, totalSize, cachedSize);
+		gui.setCachedFiles(digestToPartsMap.keySet().toArray( new String[digestToPartsMap.size()]));
 
+	}
+
+	private byte[] requestFilePartFromServer(String digest) throws IOException {
+		Socket cacheToServerSocket;
+		cacheToServerSocket = new Socket("localhost", CACHE_TO_SERVER_PORT_NO);
+		DataOutputStream out = new DataOutputStream(cacheToServerSocket.getOutputStream());
+		DataInputStream dataInputStream = new DataInputStream(cacheToServerSocket.getInputStream());
+		ByteArrayOutputStream filePartOutputStream = new ByteArrayOutputStream();
+		try {
+			out.writeUTF(digest);
+
+			byte[] buffer = new byte[2048];
+			int read = 0;
+			while ((read = dataInputStream.read(buffer)) != -1) {
+				filePartOutputStream.write(buffer, 0, read);
+
+			}
+			digestToPartsMap.put(digest, filePartOutputStream.toByteArray());
+			gui.setCachedFiles((String[]) cacheList.toArray(new String[0]));
+			return filePartOutputStream.toByteArray();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			out.close();
+			dataInputStream.close();
+			cacheToServerSocket.close();
+		}
+		return null;
 	}
 
 	private void handleFileListRequest(OutputStream outputStream) throws IOException {
@@ -147,18 +171,19 @@ public class Cache extends Thread {
 	}
 
 	public Set<String> requestFileListFromServer() throws UnknownHostException, IOException {
-		Socket clientSocket;
-		clientSocket = new Socket("localhost", CACHE_TO_SERVER_PORT_NO);
+		Socket cacheToServerSocket;
+		cacheToServerSocket = new Socket("localhost", CACHE_TO_SERVER_PORT_NO);
 
 		log.info("Cache to server socket connected");
-		DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+		DataOutputStream out = new DataOutputStream(cacheToServerSocket.getOutputStream());
 		out.writeUTF(LIST_FILES_COMMAND);
-		ObjectInputStream inputFromServer = new ObjectInputStream(clientSocket.getInputStream());
+		ObjectInputStream inputFromServer = new ObjectInputStream(cacheToServerSocket.getInputStream());
 		System.out.print("Sending string: '" + LIST_FILES_COMMAND + "'\n");
 		try {
+			fileFragmentsMap = (Map<String, FileFragments>) inputFromServer.readObject();
 
-			Set<String> fileList = null;
-			fileList = (Set<String>) inputFromServer.readObject();
+			Set<String> fileList = new HashSet<String>();
+			fileList.addAll(fileFragmentsMap.keySet());
 			return fileList;
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -167,7 +192,7 @@ public class Cache extends Thread {
 		} finally {
 			out.close();
 			inputFromServer.close();
-			clientSocket.close();
+			cacheToServerSocket.close();
 		}
 		return null;
 	}
@@ -262,18 +287,61 @@ public class Cache extends Thread {
 		return cacheLog;
 	}
 
+	/*
+	 * private void hanldeFileTransferRequest(OutputStream outputStream, String
+	 * fileName) throws FileNotFoundException, IOException { File requestedFile;
+	 * boolean cached = cacheList.contains(fileName); if (!cached) {
+	 * 
+	 * Socket cacheToServerSocket; cacheToServerSocket = new Socket("localhost",
+	 * CACHE_TO_SERVER_PORT_NO); DataOutputStream out = new
+	 * DataOutputStream(cacheToServerSocket.getOutputStream()); DataInputStream
+	 * dataInputStream = new
+	 * DataInputStream(cacheToServerSocket.getInputStream());
+	 * 
+	 * FileOutputStream fileOutput = new FileOutputStream(fileName); try {
+	 * out.writeUTF(fileName);
+	 * 
+	 * byte[] buffer = new byte[8132]; int read = 0; while ((read =
+	 * dataInputStream.read(buffer)) != -1) { fileOutput.write(buffer, 0, read);
+	 * 
+	 * } cacheList.add(fileName); gui.setCachedFiles((String[])
+	 * cacheList.toArray(new String[0])); } catch (IOException e) {
+	 * e.printStackTrace(); } finally { out.close(); dataInputStream.close();
+	 * fileOutput.close(); cacheToServerSocket.close(); } } requestedFile = new
+	 * File(fileName); byte[] tempByteArray = new byte[8132]; FileInputStream
+	 * fis = new FileInputStream(requestedFile); BufferedInputStream bis = new
+	 * BufferedInputStream(fis); DataInputStream dis = new DataInputStream(bis);
+	 * DataOutputStream outToClient = new DataOutputStream(outputStream); int
+	 * read; while ((read = dis.read(tempByteArray)) != -1) {
+	 * outToClient.write(tempByteArray, 0, read); outToClient.flush(); }
+	 * fis.close(); bis.close(); dis.close(); writeLog(fileName, cached);
+	 * 
+	 * }
+	 */
 	private void writeLog(String fileName, boolean cached) {
 		Date date = new Date();
 		DateFormat df = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
 		cacheLog += "user request: file " + fileName + " at " + df.format(date) + "\n";
 		if (cached) {
-			cacheLog += "response: cached file " + fileName + "\n";;
+			cacheLog += "response: cached file " + fileName + "\n";
+			;
 		} else {
-			cacheLog += "response: file " + fileName + " downloaded from the server"+ "\n";;
+			cacheLog += "response: file " + fileName + " downloaded from the server" + "\n";
+			;
 		}
 		gui.setLogText(cacheLog);
 	}
-	
+
+	private void writeLog(String fileName, int totalSize, int cachedSize) {
+		Date date = new Date();
+		DateFormat df = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
+		cacheLog += "user request: file " + fileName + " at " + df.format(date) + "\n";
+		String percentage = ((double) cachedSize / totalSize * 100 + "");
+		percentage = percentage.substring(0, percentage.indexOf('.'));
+		cacheLog += "response: " + percentage +"% of file " + fileName + " was constructed with the cached data\n";
+		;
+		gui.setLogText(cacheLog);
+	}
 
 	public ServerSocket getCacheListeningSocket() {
 		return cacheListeningSocket;
@@ -281,5 +349,18 @@ public class Cache extends Thread {
 
 	public void setCacheListeningSocket(ServerSocket cacheListeningSocket) {
 		this.cacheListeningSocket = cacheListeningSocket;
+	}
+	
+	public void clearCache(){
+		digestToPartsMap.clear();
+		cacheLog = new String();
+	}
+
+	public String getFilePartString(String string) {
+		if(digestToPartsMap.containsKey(string)){
+			byte[] filePart = digestToPartsMap.get(string);
+			return new String(filePart);
+		}
+		return null;
 	}
 }

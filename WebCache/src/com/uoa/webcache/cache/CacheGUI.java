@@ -19,6 +19,8 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 
 public class CacheGUI {
 	private DataBindingContext m_bindingContext;
@@ -83,7 +85,7 @@ public class CacheGUI {
 	 */
 	protected void createContents() {
 		shell = new Shell();
-		shell.setSize(665, 630);
+		shell.setSize(982, 630);
 		shell.setText("SWT Application");
 		shell.setLayout(new FormLayout());
 
@@ -92,9 +94,11 @@ public class CacheGUI {
 		fd_lblCachedFileList.top = new FormAttachment(0, 10);
 		fd_lblCachedFileList.left = new FormAttachment(0, 10);
 		lblCachedFileList.setLayoutData(fd_lblCachedFileList);
-		lblCachedFileList.setText("Cached File List");
+		lblCachedFileList.setText("Cached File Part Digest List");
 
 		list = new List(shell, SWT.BORDER | SWT.V_SCROLL | SWT.WRAP);
+		
+		
 		FormData fd_list = new FormData();
 		fd_list.bottom = new FormAttachment(lblCachedFileList, 493, SWT.BOTTOM);
 		fd_list.top = new FormAttachment(lblCachedFileList, 23);
@@ -107,15 +111,15 @@ public class CacheGUI {
 		styledText.setEditable(false);
 		FormData fd_styledText = new FormData();
 		fd_styledText.bottom = new FormAttachment(100, -74);
+		fd_styledText.left = new FormAttachment(list, 425);
 		fd_styledText.right = new FormAttachment(100, -10);
-		fd_styledText.left = new FormAttachment(list, 51);
 		styledText.setLayoutData(fd_styledText);
 
 		Label lblCacheLog = new Label(shell, SWT.NONE);
 		fd_styledText.top = new FormAttachment(lblCacheLog, 23);
 		FormData fd_lblCacheLog = new FormData();
-		fd_lblCacheLog.left = new FormAttachment(lblCachedFileList, 199);
 		fd_lblCacheLog.top = new FormAttachment(lblCachedFileList, 0, SWT.TOP);
+		fd_lblCacheLog.right = new FormAttachment(100, -241);
 		lblCacheLog.setLayoutData(fd_lblCacheLog);
 		lblCacheLog.setText("Cache Log");
 
@@ -126,13 +130,41 @@ public class CacheGUI {
 		fd_btnClearCache.left = new FormAttachment(lblCachedFileList, 0, SWT.LEFT);
 		btnClearCache.setLayoutData(fd_btnClearCache);
 		btnClearCache.setText("Clear Cache");
+		
+		Label lblFilePartContent = new Label(shell, SWT.NONE);
+		FormData fd_lblFilePartContent = new FormData();
+		fd_lblFilePartContent.bottom = new FormAttachment(lblCachedFileList, 0, SWT.BOTTOM);
+		fd_lblFilePartContent.left = new FormAttachment(lblCachedFileList, 158);
+		lblFilePartContent.setLayoutData(fd_lblFilePartContent);
+		lblFilePartContent.setText("File Part Content");
+		
+		StyledText styledText_1 = new StyledText(shell, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
+		FormData fd_styledText_1 = new FormData();
+		fd_styledText_1.right = new FormAttachment(styledText, -61);
+		fd_styledText_1.bottom = new FormAttachment(list, 0, SWT.BOTTOM);
+		fd_styledText_1.top = new FormAttachment(lblFilePartContent, 23);
+		fd_styledText_1.left = new FormAttachment(list, 64);
+		styledText_1.setLayoutData(fd_styledText_1);
 		btnClearCache.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				list.setItems(new String[0]);
-				getCache().getCacheList().clear();
+				getCache().clearCache();
+				styledText_1.setText("");
+				styledText.setText("");
 			}
 		});
+		
+		list.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (list.getSelection().length != 0) {
+					String fileToBeDisplayed = cache.getFilePartString(list.getSelection()[0]);
+					styledText_1.setText(fileToBeDisplayed);
+				}
+			}
+		});
+		
 		m_bindingContext = initDataBindings();
 
 		shell.addListener(SWT.Close, new Listener() {
@@ -147,6 +179,8 @@ public class CacheGUI {
 				}
 		      }
 		    });
+		
+		
 	}
 
 	public Cache getCache() {

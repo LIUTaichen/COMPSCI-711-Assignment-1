@@ -1,6 +1,7 @@
 package com.uoa.webcache.server;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -12,28 +13,37 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import com.uoa.webcache.cache.Cache;
+import com.uoa.webcache.filefragments.FileFragments;
+import com.uoa.webcache.util.FileFragmenter;
 
 public class Server extends Thread {
-	private  Logger log = Logger.getLogger(Server.class.getName());
-	private  final int PORT_NO = 8080;
-	private  final String LIST_FILES_COMMAND = "list files";
-	private  Map<String, File> fileMap = new HashMap<String, File>();
-	//private static Map<String, ArrayList<>>
+	private Logger log = Logger.getLogger(Server.class.getName());
+	private final int PORT_NO = 8080;
+	private final String LIST_FILES_COMMAND = "list files";
+	private Map<String, File> fileMap = new HashMap<String, File>();
+	private Map<String, FileFragments> fileFragmentsMap = new HashMap<String, FileFragments>();
+	private Map<String, byte[]> digestToPartsMap = new HashMap<String, byte[]>();
+	private FileFragmenter fragmenter = new FileFragmenter();
+	// private static Map<String, ArrayList<>>
 
-	public static void main(String args[]) throws IOException { 
+	public static void main(String args[]) throws IOException {
 		Server server = new Server();
 		server.run();
 	}
 
-	
-	public  void run()  {
+	public void run() {
 		loadFiles();
 		ServerSocket serverSocket = null;
 		Socket socket = null;
@@ -44,7 +54,6 @@ public class Server extends Thread {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		
 
 		while (true) {
 			try {
@@ -93,12 +102,12 @@ public class Server extends Thread {
 		}
 		log.info("Server stopping");
 	}
-	private  void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
+
+	private void hanldeFileTransferRequest(OutputStream outputStream, String digestString)
 			throws FileNotFoundException, IOException {
-		File requestedFile = fileMap.get(fileName);
-		byte[] tempByteArray = new byte[8132];
-		FileInputStream fis = new FileInputStream(requestedFile);
-		BufferedInputStream bis = new BufferedInputStream(fis);
+		byte[]  filePart= digestToPartsMap.get(digestString);
+		byte[] tempByteArray = new byte[2048];
+		ByteArrayInputStream bis = new ByteArrayInputStream(filePart);
 		DataInputStream dis = new DataInputStream(bis);
 		DataOutputStream outToClient = new DataOutputStream(outputStream);
 		int read;
@@ -107,30 +116,52 @@ public class Server extends Thread {
 			outToClient.flush();
 		}
 
-		fis.close();
 		bis.close();
 		dis.close();
 	}
 
-	private  void handleFileListRequest(OutputStream outputStream) throws IOException {
+	private void handleFileListRequest(OutputStream outputStream) throws IOException {
 		log.info("client requested file list");
 		ObjectOutputStream outToClient = new ObjectOutputStream(outputStream);
-		Set<String> fileList = new HashSet<String>(fileMap.keySet());
-		outToClient.writeObject(fileList);
+		outToClient.writeObject(fileFragmentsMap);
 	}
 
-	private  void loadFiles() {
-
-		File folder = new File("files");
-		log.info(folder.getAbsolutePath());
-		File[] listOfFiles = folder.listFiles();
-		if (listOfFiles == null) {
-			log.info("wrong directory, no files loaded");
-			return;
-		}
-		for (File file : listOfFiles) {
-			log.info(file.getName());
-			fileMap.put(file.getName(), file);
+	private void loadFiles() {
+		MessageDigest md;
+	
+		try {
+			md = MessageDigest.getInstance("MD5");
+			File folder = new File("files");
+			log.info(folder.getAbsolutePath());
+			File[] listOfFiles = folder.listFiles();
+			if (listOfFiles == null) {
+				
+				log.info("wrong directory, no files loaded");
+				folder = new File("src/resources/files");
+				listOfFiles = folder.listFiles();
+				log.info(folder.getAbsolutePath());
+			}
+			for (File file : listOfFiles) {
+				log.info(file.getName());
+				fileMap.put(file.getName(), file);
+				List<byte[]> fragmentList = fragmenter.fragment(file.getAbsolutePath());
+				FileFragments fileFragments = new FileFragments();
+				for (byte[] filePart : fragmentList) {
+					
+					byte[] thedigest = md.digest(filePart);
+					byte[] encoded = Base64.getEncoder().encode(thedigest);
+					String base64Digest = new String(encoded);
+					digestToPartsMap.put(base64Digest, filePart);
+					fileFragments.getFragmentDigestList().add(base64Digest);
+					log.info("digestToPartsMap map size : " +digestToPartsMap.size() +"");
+				}
+				fileFragmentsMap.put(file.getName(), fileFragments);
+			}
+			
+			log.info("digestToPartsMap map size : " +digestToPartsMap.size() +"");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
