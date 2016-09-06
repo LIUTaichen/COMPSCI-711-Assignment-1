@@ -21,55 +21,15 @@ import java.util.logging.Logger;
 import com.uoa.webcache.cache.Cache;
 
 public class Server extends Thread {
-	private static Logger log = Logger.getLogger(Server.class.getName());
-	private static final int PORT_NO = 8080;
-	private static final String LIST_FILES_COMMAND = "list files";
-	private static Map<String, File> fileMap = new HashMap<String, File>();
-	
+	private  Logger log = Logger.getLogger(Server.class.getName());
+	private  final int PORT_NO = 8080;
+	private  final String LIST_FILES_COMMAND = "list files";
+	private  Map<String, File> fileMap = new HashMap<String, File>();
+	//private static Map<String, ArrayList<>>
 
-	public static void main(String args[]) throws IOException {
-		loadFiles();
-		ServerSocket serverSocket = null;
-		Socket socket = null;
-		serverSocket = new ServerSocket(PORT_NO);
-		serverSocket.setSoTimeout(600000);
-
-		while (true) {
-			try {
-				log.info("Server opening new socket at port " + PORT_NO + " , waiting for connection from cache");
-
-				log.info("Server socket is listening for traffic!");
-				socket = serverSocket.accept();
-
-				DataInputStream input = new DataInputStream(socket.getInputStream());
-				OutputStream outputStream = socket.getOutputStream();
-
-				String commandFromClient = input.readUTF();
-				log.info("received command : [" + commandFromClient + "]");
-				if (LIST_FILES_COMMAND.equals(commandFromClient)) {
-					handleFileListRequest(outputStream);
-
-				} else {
-					hanldeFileTransferRequest(outputStream, commandFromClient);
-				}
-
-			} catch (SocketTimeoutException s) {
-				log.info("Socket timed out!");
-				break;
-			} catch (IOException e) {
-				e.printStackTrace();
-				break;
-			} catch (Exception e) {
-				e.printStackTrace();
-				break;
-			} finally {
-				socket.close();
-			}
-
-		}
-
-		serverSocket.close();
-		log.info("Server stopping");
+	public static void main(String args[]) throws IOException { 
+		Server server = new Server();
+		server.run();
 	}
 
 	
@@ -133,7 +93,7 @@ public class Server extends Thread {
 		}
 		log.info("Server stopping");
 	}
-	private static void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
+	private  void hanldeFileTransferRequest(OutputStream outputStream, String fileName)
 			throws FileNotFoundException, IOException {
 		File requestedFile = fileMap.get(fileName);
 		byte[] tempByteArray = new byte[8132];
@@ -152,14 +112,14 @@ public class Server extends Thread {
 		dis.close();
 	}
 
-	private static void handleFileListRequest(OutputStream outputStream) throws IOException {
+	private  void handleFileListRequest(OutputStream outputStream) throws IOException {
 		log.info("client requested file list");
 		ObjectOutputStream outToClient = new ObjectOutputStream(outputStream);
 		Set<String> fileList = new HashSet<String>(fileMap.keySet());
 		outToClient.writeObject(fileList);
 	}
 
-	private static void loadFiles() {
+	private  void loadFiles() {
 
 		File folder = new File("files");
 		log.info(folder.getAbsolutePath());
