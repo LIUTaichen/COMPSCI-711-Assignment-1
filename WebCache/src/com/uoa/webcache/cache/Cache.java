@@ -282,4 +282,13 @@ public class Cache extends Thread {
 	public void setCacheListeningSocket(ServerSocket cacheListeningSocket) {
 		this.cacheListeningSocket = cacheListeningSocket;
 	}
+
+
+	public void clearCache() {
+		for(String fileName : getCacheList()){
+			File cachedFile = new File(fileName);
+			cachedFile.delete();
+		}
+		getCacheList().clear();
+	}
 }

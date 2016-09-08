@@ -130,7 +130,7 @@ public class CacheGUI {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				list.setItems(new String[0]);
-				getCache().getCacheList().clear();
+				getCache().clearCache();
 			}
 		});
 		m_bindingContext = initDataBindings();
